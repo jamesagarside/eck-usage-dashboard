@@ -92,4 +92,30 @@ clean: ## Clean up temporary files and virtual environment
 	find . -type d -name "__pycache__" -delete
 	find .. -type f -name "*.pyc" -delete
 	find .. -type d -name "__pycache__" -delete
+	find .. -name ".pytest_cache" -type d -exec rm -rf {} + 2>/dev/null || true
 	rm -rf $(VENV)
+
+pytest: ## Run tests using pytest
+	@if [ -f $(VENV)/bin/python ]; then \
+		$(VENV)/bin/python -m pytest ../test_eck_usage_monitor.py -v; \
+	else \
+		$(PYTHON) -m pytest ../test_eck_usage_monitor.py -v; \
+	fi
+
+pytest-coverage: ## Run tests with coverage report
+	@if [ -f $(VENV)/bin/python ]; then \
+		$(VENV)/bin/pip install pytest-cov; \
+		$(VENV)/bin/python -m pytest ../test_eck_usage_monitor.py --cov=../eck_usage_monitor --cov-report=term-missing; \
+	else \
+		pip3 install pytest-cov; \
+		$(PYTHON) -m pytest ../test_eck_usage_monitor.py --cov=../eck_usage_monitor --cov-report=term-missing; \
+	fi
+
+lint: ## Run flake8 linting
+	@if [ -f $(VENV)/bin/python ]; then \
+		$(VENV)/bin/pip install flake8; \
+		$(VENV)/bin/flake8 .. --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics; \
+	else \
+		pip3 install flake8; \
+		flake8 .. --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics; \
+	fi

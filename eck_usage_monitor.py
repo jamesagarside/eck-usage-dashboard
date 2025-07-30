@@ -316,7 +316,7 @@ class ECKUsageMonitor:
                 check=True
             )
             return result.stdout.strip()
-        except:
+        except (subprocess.CalledProcessError, FileNotFoundError, OSError):
             return 'unknown'
 
     def _get_kubernetes_version(self) -> str:
@@ -332,7 +332,7 @@ class ECKUsageMonitor:
             for line in result.stdout.split('\n'):
                 if 'Client Version:' in line:
                     return line.split(': ')[-1].strip()
-        except:
+        except (subprocess.CalledProcessError, FileNotFoundError, OSError):
             pass
         return 'unknown'
 
@@ -841,8 +841,10 @@ class ECKUsageMonitor:
                 'kibana_ref': spec.get('kibanaRef', {}),
                 'fleet_server_enabled': spec.get('fleetServerEnabled', False),
                 'mode': spec.get('mode', 'fleet'),
-                'deployment_mode': spec.get('deployment', {}).get('replicas', instance_count) if spec.get('deployment') else instance_count,
-                'pod_name': f"{deployment_name}-agent-{i:x}" if spec.get('deployment') else f"{deployment_name}-agent-node-{i}"
+                'deployment_mode': (spec.get('deployment', {}).get('replicas', instance_count)
+                                    if spec.get('deployment') else instance_count),
+                'pod_name': (f"{deployment_name}-agent-{i:x}" if spec.get('deployment')
+                             else f"{deployment_name}-agent-node-{i}")
             }
 
             # Update status
@@ -1053,7 +1055,9 @@ class ECKUsageMonitor:
             all_metrics['summary']['total_components'] += sub_component_count
 
         self.logger.info(
-            f"Collected metrics for {all_metrics['summary']['total_components']} component instances from {sum(ct['deployments'] for ct in all_metrics['summary']['components_by_type'].values())} deployments")
+            f"Collected metrics for {all_metrics['summary']['total_components']} component instances "
+            f"from {sum(ct['deployments'] for ct in all_metrics['summary']['components_by_type'].values())} "
+            f"deployments")
         return all_metrics
 
     def send_to_elasticsearch(self, metrics: Dict[str, Any]) -> bool:
@@ -1479,20 +1483,8 @@ class ECKUsageMonitor:
         return success
 
 
-def main():
-    """Main function"""
-    # Parse config-file argument first to know which config file to load
-    config_file_path = os.getenv('CONFIG_FILE', 'config.env')
-
-    # Quick parse to get config file if specified
-    temp_parser = argparse.ArgumentParser(add_help=False)
-    temp_parser.add_argument('--config-file', default=config_file_path)
-    temp_args, _ = temp_parser.parse_known_args()
-
-    # Load configuration from the specified file
-    file_config = load_config_from_file(temp_args.config_file)
-
-    # Set up argument parser
+def setup_argument_parser(file_config: Dict[str, str], config_file_path: str) -> argparse.ArgumentParser:
+    """Set up command line argument parser with config file defaults"""
     parser = argparse.ArgumentParser(
         description='ECK Usage Monitor',
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -1543,25 +1535,34 @@ Example config.env file:
                         default=str_to_bool(get_default('DRY_RUN', 'false')),
                         help='Collect metrics but do not send to Elasticsearch')
     parser.add_argument('--config-file',
-                        default=temp_args.config_file,
+                        default=config_file_path,
                         help='Path to configuration file (default: config.env)')
 
-    args = parser.parse_args()
+    return parser
 
+
+def validate_configuration(args, parser) -> bool:
+    """Validate required configuration arguments"""
+    if not args.elasticsearch_url:
+        print("Error: Elasticsearch URL is required. Set it via --elasticsearch-url argument "
+              "or ELASTICSEARCH_URL in config.env")
+        parser.print_help()
+        return False
+
+    if not args.api_key:
+        print("Error: Elasticsearch API key is required. Set it via --api-key argument "
+              "or ELASTICSEARCH_API_KEY in config.env")
+        parser.print_help()
+        return False
+
+    return True
+
+
+def setup_logging_and_show_config(args, file_config: Dict[str, str]):
+    """Set up logging and show configuration information"""
     # Set up logging early
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
-
-    # Validate required configuration
-    if not args.elasticsearch_url:
-        print("Error: Elasticsearch URL is required. Set it via --elasticsearch-url argument or ELASTICSEARCH_URL in config.env")
-        parser.print_help()
-        return 1
-
-    if not args.api_key:
-        print("Error: Elasticsearch API key is required. Set it via --api-key argument or ELASTICSEARCH_API_KEY in config.env")
-        parser.print_help()
-        return 1
 
     # Show configuration source info
     logger = logging.getLogger(__name__)
@@ -1576,6 +1577,37 @@ Example config.env file:
         logger.info(f"Create templates: {args.create_templates}")
         logger.info(f"Dry run mode: {args.dry_run}")
 
+
+def handle_templates_creation(monitor, args) -> bool:
+    """Handle index template creation based on arguments"""
+    if args.create_templates and not args.dry_run:
+        monitor.logger.info("Creating index templates")
+        if not monitor.create_index_templates():
+            monitor.logger.error("Failed to create some index templates")
+            return False
+    elif args.create_templates and args.dry_run:
+        monitor.logger.info("Dry run: Would create index templates")
+    return True
+
+
+def handle_dry_run_output(monitor, metrics, args) -> int:
+    """Handle output for dry run mode"""
+    monitor.logger.info("Dry run mode: Metrics collected successfully")
+    monitor.logger.info(
+        f"Would send {metrics['summary']['total_components']} component instances to Elasticsearch")
+    monitor.logger.info(
+        f"Components by type: {metrics['summary']['components_by_type']}")
+    monitor.logger.info("Use --verbose to see detailed metrics")
+    if args.verbose:
+        sample_component = metrics['components'][0] if metrics['components'] else {
+        }
+        monitor.logger.debug(
+            f"Sample component metric: {json.dumps(sample_component, indent=2)}")
+    return 0
+
+
+def run_monitor(args) -> int:
+    """Run the ECK monitor with the given arguments"""
     # Initialize monitor
     monitor = ECKUsageMonitor(
         elasticsearch_url=args.elasticsearch_url,
@@ -1584,14 +1616,9 @@ Example config.env file:
     )
 
     try:
-        # Create index templates if requested and not in dry-run mode
-        if args.create_templates and not args.dry_run:
-            monitor.logger.info("Creating index templates")
-            if not monitor.create_index_templates():
-                monitor.logger.error("Failed to create some index templates")
-                return 1
-        elif args.create_templates and args.dry_run:
-            monitor.logger.info("Dry run: Would create index templates")
+        # Create index templates if requested
+        if not handle_templates_creation(monitor, args):
+            return 1
 
         # Collect metrics
         metrics = monitor.collect_all_metrics()
@@ -1601,16 +1628,7 @@ Example config.env file:
 
         # Send to Elasticsearch or show dry run info
         if args.dry_run:
-            monitor.logger.info("Dry run mode: Metrics collected successfully")
-            monitor.logger.info(
-                f"Would send {metrics['summary']['total_components']} component instances to Elasticsearch")
-            monitor.logger.info(
-                f"Components by type: {metrics['summary']['components_by_type']}")
-            monitor.logger.info("Use --verbose to see detailed metrics")
-            if args.verbose:
-                monitor.logger.debug(
-                    f"Sample component metric: {json.dumps(metrics['components'][0] if metrics['components'] else {}, indent=2)}")
-            return 0
+            return handle_dry_run_output(monitor, metrics, args)
         else:
             monitor.logger.info("Sending metrics to Elasticsearch")
             if monitor.send_to_elasticsearch(metrics):
@@ -1628,6 +1646,34 @@ Example config.env file:
     except Exception as e:
         monitor.logger.error(f"Unexpected error: {e}")
         return 1
+
+
+def main():
+    """Main function"""
+    # Parse config-file argument first to know which config file to load
+    config_file_path = os.getenv('CONFIG_FILE', 'config.env')
+
+    # Quick parse to get config file if specified
+    temp_parser = argparse.ArgumentParser(add_help=False)
+    temp_parser.add_argument('--config-file', default=config_file_path)
+    temp_args, _ = temp_parser.parse_known_args()
+
+    # Load configuration from the specified file
+    file_config = load_config_from_file(temp_args.config_file)
+
+    # Set up argument parser
+    parser = setup_argument_parser(file_config, temp_args.config_file)
+    args = parser.parse_args()
+
+    # Validate required configuration
+    if not validate_configuration(args, parser):
+        return 1
+
+    # Set up logging and show configuration
+    setup_logging_and_show_config(args, file_config)
+
+    # Run the monitor
+    return run_monitor(args)
 
 
 if __name__ == '__main__':

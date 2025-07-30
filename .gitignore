@@ -4,3 +4,5 @@ __pychache__
 *.pyd
 __pycache__ 
 config.env
+.pytest_cache
+.actrc
