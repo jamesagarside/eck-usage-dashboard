@@ -345,7 +345,7 @@ class ECKUsageMonitor:
         if not node_sets:
             doc = copy.deepcopy(base_document)
             doc['eck']['component'] = {
-                'type': 'elasticsearch-node',
+                'type': 'elasticsearch',
                 'instance_name': 'default',
                 'node_number': 1,
                 'nodeset_name': 'default',
@@ -398,7 +398,7 @@ class ECKUsageMonitor:
                 # Update orchestrator resource info for this specific node
                 doc['orchestrator']['resource'][
                     'name'] = f"{base_document['orchestrator']['resource']['name']}-{node_set_name}-{node_number}"
-                doc['orchestrator']['resource']['type'] = 'elasticsearch-node'
+                doc['orchestrator']['resource']['type'] = 'elasticsearch'
 
                 # Update service info - use StatefulSet name for Elasticsearch
                 deployment_name = base_document['eck']['deployment']['name']
@@ -406,7 +406,7 @@ class ECKUsageMonitor:
 
                 # ECK component-specific fields
                 doc['eck']['component'] = {
-                    'type': 'elasticsearch-node',
+                    'type': 'elasticsearch',
                     'instance_name': f"{node_set_name}-{node_number}",
                     'node_number': node_number,
                     'nodeset_name': node_set_name,
@@ -426,7 +426,7 @@ class ECKUsageMonitor:
                 # Host information (per individual node)
                 doc['host'] = {
                     'name': f"{base_document['eck']['deployment']['name']}-{node_set_name}-{node_number}",
-                    'type': 'elasticsearch-node',
+                    'type': 'elasticsearch',
                     'architecture': 'x86_64',
                     'containerized': True
                 }
@@ -467,7 +467,7 @@ class ECKUsageMonitor:
             # Update orchestrator resource info for this specific instance
             doc['orchestrator']['resource'][
                 'name'] = f"{base_document['orchestrator']['resource']['name']}-{instance_name}"
-            doc['orchestrator']['resource']['type'] = 'kibana-instance'
+            doc['orchestrator']['resource']['type'] = 'kibana'
 
             # Update service info - use Deployment name for Kibana
             deployment_name = base_document['eck']['deployment']['name']
@@ -475,7 +475,7 @@ class ECKUsageMonitor:
 
             # ECK component-specific fields
             doc['eck']['component'] = {
-                'type': 'kibana-instance',
+                'type': 'kibana',
                 'instance_name': instance_name,
                 'instance_number': instance_number,
                 'total_instances': instance_count,
@@ -518,7 +518,7 @@ class ECKUsageMonitor:
             # Host information for this individual instance
             doc['host'] = {
                 'name': f"{base_document['eck']['deployment']['name']}-{instance_name}",
-                'type': 'kibana-instance',
+                'type': 'kibana',
                 'architecture': 'x86_64',
                 'containerized': True
             }
@@ -556,7 +556,7 @@ class ECKUsageMonitor:
             # Update orchestrator resource info for this specific instance
             doc['orchestrator']['resource'][
                 'name'] = f"{base_document['orchestrator']['resource']['name']}-{instance_name}"
-            doc['orchestrator']['resource']['type'] = 'apm-instance'
+            doc['orchestrator']['resource']['type'] = 'apm-server'
 
             # Update service info - use Deployment name for APM Server
             deployment_name = base_document['eck']['deployment']['name']
@@ -564,7 +564,7 @@ class ECKUsageMonitor:
 
             # ECK component-specific fields
             doc['eck']['component'] = {
-                'type': 'apm-instance',
+                'type': 'apm-server',
                 'instance_name': instance_name,
                 'instance_number': i + 1,
                 'total_instances': instance_count,
@@ -608,7 +608,7 @@ class ECKUsageMonitor:
             # Host information
             doc['host'] = {
                 'name': f"{base_document['eck']['deployment']['name']}-{instance_name}",
-                'type': 'apm-instance',
+                'type': 'apm-server',
                 'architecture': 'x86_64',
                 'containerized': True
             }
@@ -646,7 +646,7 @@ class ECKUsageMonitor:
             # Update orchestrator resource info for this specific instance
             doc['orchestrator']['resource'][
                 'name'] = f"{base_document['orchestrator']['resource']['name']}-{instance_name}"
-            doc['orchestrator']['resource']['type'] = 'enterprisesearch-instance'
+            doc['orchestrator']['resource']['type'] = 'enterprise-search'
 
             # Update service info - use Deployment name for Enterprise Search
             deployment_name = base_document['eck']['deployment']['name']
@@ -654,7 +654,7 @@ class ECKUsageMonitor:
 
             # ECK component-specific fields
             doc['eck']['component'] = {
-                'type': 'enterprisesearch-instance',
+                'type': 'enterprise-search',
                 'instance_name': instance_name,
                 'instance_number': i + 1,
                 'total_instances': instance_count,
@@ -697,7 +697,7 @@ class ECKUsageMonitor:
             # Host information
             doc['host'] = {
                 'name': f"{base_document['eck']['deployment']['name']}-{instance_name}",
-                'type': 'enterprisesearch-instance',
+                'type': 'enterprise-search',
                 'architecture': 'x86_64',
                 'containerized': True
             }
@@ -735,7 +735,7 @@ class ECKUsageMonitor:
             # Update orchestrator resource info for this specific instance
             doc['orchestrator']['resource'][
                 'name'] = f"{base_document['orchestrator']['resource']['name']}-{instance_name}"
-            doc['orchestrator']['resource']['type'] = 'logstash-instance'
+            doc['orchestrator']['resource']['type'] = 'logstash'
 
             # Update service info - use StatefulSet name for Logstash
             deployment_name = base_document['eck']['deployment']['name']
@@ -743,7 +743,7 @@ class ECKUsageMonitor:
 
             # ECK component-specific fields
             doc['eck']['component'] = {
-                'type': 'logstash-instance',
+                'type': 'logstash',
                 'instance_name': instance_name,
                 'instance_number': i + 1,
                 'total_instances': instance_count,
@@ -786,7 +786,7 @@ class ECKUsageMonitor:
             # Host information
             doc['host'] = {
                 'name': f"{base_document['eck']['deployment']['name']}-{instance_name}",
-                'type': 'logstash-instance',
+                'type': 'logstash',
                 'architecture': 'x86_64',
                 'containerized': True
             }
@@ -824,7 +824,7 @@ class ECKUsageMonitor:
             # Update orchestrator resource info for this specific instance
             doc['orchestrator']['resource'][
                 'name'] = f"{base_document['orchestrator']['resource']['name']}-{instance_name}"
-            doc['orchestrator']['resource']['type'] = 'agent-instance'
+            doc['orchestrator']['resource']['type'] = 'elastic-agent'
 
             # Update service info - use Deployment/DaemonSet name for Elastic Agent
             deployment_name = base_document['eck']['deployment']['name']
@@ -832,7 +832,7 @@ class ECKUsageMonitor:
 
             # ECK component-specific fields
             doc['eck']['component'] = {
-                'type': 'agent-instance',
+                'type': 'elastic-agent',
                 'instance_name': instance_name,
                 'instance_number': i + 1,
                 'total_instances': instance_count,
@@ -909,7 +909,7 @@ class ECKUsageMonitor:
             # Host information
             doc['host'] = {
                 'name': f"{base_document['eck']['deployment']['name']}-{instance_name}",
-                'type': 'agent-instance',
+                'type': 'elastic-agent',
                 'architecture': 'x86_64',
                 'containerized': True
             }
@@ -1070,78 +1070,11 @@ class ECKUsageMonitor:
         timestamp = datetime.now()
         date_suffix = timestamp.strftime("%Y.%m.%d")
 
-        # Send licensing data (make it ECS-compliant)
-        licensing_index = f"{self.index_prefix}-licensing-{date_suffix}"
-        licensing_doc = {
-            '@timestamp': timestamp.isoformat(),
-            'ecs': {'version': '8.0.0'},
-            'event': {
-                'kind': 'metric',
-                'category': ['configuration'],
-                'type': ['info'],
-                'dataset': 'eck.licensing',
-                'module': 'eck-monitor',
-                'created': timestamp.isoformat()
-            },
-            'orchestrator': {
-                'type': 'kubernetes',
-                'cluster': {
-                    'name': self._get_cluster_name()
-                }
-            },
-            'service': {
-                'name': 'eck-operator',
-                'type': 'orchestrator'
-            },
-            'eck': {
-                'licensing': metrics['licensing']
-            },
-            'collection_timestamp': timestamp.isoformat(),
-        }
-
-        if not self._send_document(licensing_index, licensing_doc):
-            success = False
-
-        # Send component metrics
+        # Send component metrics only
         components_index = f"{self.index_prefix}-components-{date_suffix}"
         for component in metrics['components']:
             if not self._send_document(components_index, component):
                 success = False
-
-        # Send summary (make it ECS-compliant)
-        summary_index = f"{self.index_prefix}-summary-{date_suffix}"
-        summary_doc = {
-            '@timestamp': timestamp.isoformat(),
-            'ecs': {'version': '8.0.0'},
-            'event': {
-                'kind': 'metric',
-                'category': ['configuration'],
-                'type': ['info'],
-                'dataset': 'eck.summary',
-                'module': 'eck-monitor',
-                'created': timestamp.isoformat()
-            },
-            'orchestrator': {
-                'type': 'kubernetes',
-                'cluster': {
-                    'name': self._get_cluster_name()
-                }
-            },
-            'service': {
-                'name': 'eck-monitor',
-                'type': 'monitoring'
-            },
-            'eck': {
-                'summary': {
-                    'total_components': metrics['summary']['total_components'],
-                    'collection_timestamp': metrics['summary']['collection_timestamp'],
-                    'components_by_type': metrics['summary']['components_by_type']
-                }
-            }
-        }
-
-        if not self._send_document(summary_index, summary_doc):
-            success = False
 
         return success
 
@@ -1305,7 +1238,8 @@ class ECKUsageMonitor:
                                         'instance_number': {'type': 'integer'},
                                         'node_count': {'type': 'integer'},
                                         'roles': {'type': 'keyword'},
-                                        'parent_deployment': {'type': 'keyword'}
+                                        'parent_deployment': {'type': 'keyword'},
+                                        'pod_name': {'type': 'keyword'}
                                     }
                                 },
                                 'status': {

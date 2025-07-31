@@ -244,11 +244,11 @@ spec:
       - name: logstash
         resources:
           requests:
-            memory: 1Gi
-            cpu: 0.5
+            memory: 512Mi
+            cpu: 0.2
           limits:
-            memory: 1Gi
-            cpu: 0.5
+            memory: 512Mi
+            cpu: 0.2
 ---
 apiVersion: logstash.k8s.elastic.co/v1alpha1
 kind: Logstash
@@ -269,21 +269,12 @@ spec:
           port => 5044
         }
       }
-      filter {
-        grok {
-          match => { "message" => "%{COMBINEDAPACHELOG}" }
-        }
-        date {
-          match => [ "timestamp" , "dd/MMM/yyyy:HH:mm:ss Z" ]
-        }
-      }
       output {
         elasticsearch {
-          hosts => ["${PROD_ES_HOSTS}"]
-          user => "${PROD_ES_USER}"
-          password => "${PROD_ES_PASSWORD}"
-          ssl_certificate_authorities => "${PROD_ES_SSL_CERTIFICATE_AUTHORITY}"
-          index => "logstash-apache-%{+YYYY.MM.dd}"
+          hosts => ["${QS_ES_HOSTS}"]
+          user => "${QS_ES_USER}"
+          password => "${QS_ES_PASSWORD}"
+          ssl_certificate_authorities => "${QS_ES_SSL_CERTIFICATE_AUTHORITY}"
         }
       }
   podTemplate:
@@ -292,11 +283,11 @@ spec:
       - name: logstash
         resources:
           requests:
-            memory: 1Gi
-            cpu: 0.5
+            memory: 512Mi
+            cpu: 0.2
           limits:
-            memory: 1Gi
-            cpu: 0.5
+            memory: 512Mi
+            cpu: 0.2
 ---
 # Additional small test cluster for development
 apiVersion: elasticsearch.k8s.elastic.co/v1
@@ -359,6 +350,7 @@ spec:
     name: quickstart
   fleetServerEnabled: true
   mode: fleet
+  policyID: "eck-fleet-server-policy"
   deployment:
     replicas: 1
     podTemplate:
@@ -380,8 +372,6 @@ metadata:
   namespace: production
 spec:
   version: 8.19.0
-  elasticsearchRefs:
-  - name: production-cluster
   kibanaRef:
     name: production-kibana
   fleetServerEnabled: false
@@ -407,12 +397,11 @@ metadata:
   namespace: development
 spec:
   version: 9.1.0
-  elasticsearchRefs:
-  - name: dev-cluster
   kibanaRef:
     name: dev-kibana
   fleetServerEnabled: false
   mode: fleet
+  policyID: "eck-dev-fleet-policy"
   deployment:
     replicas: 1
     podTemplate:
